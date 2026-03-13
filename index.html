@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>JobHunter AI — Victor Castro</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#020b16;color:#e2e8f0;font-family:'DM Sans','Segoe UI',sans-serif;min-height:100vh}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:#0d1829}::-webkit-scrollbar-thumb{background:#1e293b;border-radius:2px}
+@keyframes ping{75%,100%{transform:scale(2);opacity:0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+button{cursor:pointer;font-family:inherit}
+input{font-family:inherit}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+// ── CONFIG — CAMBIA ESTA URL DESPUÉS DE CREAR TU BACKEND ──────
+const BACKEND_URL = localStorage.getItem("jh_backend") || "https://YOUR-BACKEND.onrender.com";
+
+// ── DATA ──────────────────────────────────────────────────────
+const PROFILE = {
+  name:"Victor Castro Medina",
+  title:"Packaging / Mechanical Engineer | PET | Industrialization | Sustainability",
+  location:"Île-de-France, France",
+  email:"vacm182@hotmail.com",
+  linkedin:"linkedin.com/in/victor-a-castro-medina",
+  skills:["Mechanical Design","Industrialization","PET Packaging","rPET","Eco-design","Hotfill","Lightweighting","Project Management","Leadership","SolidWorks","Keyshot"],
+  targetCompanies:["L'Oréal","Danone","Nestlé","Amcor","ALPLA","Sidel"],
+};
+const JOBS=[
+  {id:1,title:"Packaging Development Engineer – PET",company:"L'Oréal",location:"Clichy, FR",match:96,platform:"LinkedIn",salary:"55-70k€",posted:"3h ago",status:"applied",urgent:true,keywords:["PET","Eco-design","Industrialization"]},
+  {id:2,title:"Sustainable Packaging Engineer",company:"Danone",location:"Paris, FR",match:93,platform:"Indeed",salary:"50-65k€",posted:"5h ago",status:"applied",urgent:false,keywords:["rPET","Sustainability","R&D"]},
+  {id:3,title:"Packaging Innovation Lead",company:"Nestlé",location:"Marne-la-Vallée, FR",match:91,platform:"Welcome to the Jungle",salary:"65-80k€",posted:"7h ago",status:"generating",urgent:true,keywords:["Hotfill","PET","Innovation"]},
+  {id:4,title:"Global Packaging Engineer – PET",company:"Amcor",location:"Lyon, FR",match:88,platform:"Glassdoor",salary:"58-72k€",posted:"9h ago",status:"pending",urgent:false,keywords:["PET","Lightweighting","Supply Chain"]},
+  {id:5,title:"R&D Packaging Engineer",company:"Sidel",location:"Octeville-sur-Mer, FR",match:85,platform:"APEC",salary:"55-68k€",posted:"14h ago",status:"pending",urgent:false,keywords:["Sidel","PET","Production Lines"]},
+  {id:6,title:"Packaging Industrialization Manager",company:"ALPLA",location:"Strasbourg, FR",match:82,platform:"France Travail",salary:"52-65k€",posted:"Yesterday",status:"pending",urgent:false,keywords:["ALPLA","Industrialization","PET"]}
+];
+const RECRUITERS=[
+  {id:1,name:"Claire Dupont",role:"Talent Acquisition @ L'Oréal",status:"connected",replied:true,avatar:"CD"},
+  {id:2,name:"Antoine Mercier",role:"HR Manager @ Danone",status:"sent",replied:false,avatar:"AM"},
+  {id:3,name:"Sophie Roux",role:"Recruiter @ Nestlé",status:"pending",replied:false,avatar:"SR"},
+  {id:4,name:"Julien Fabre",role:"Head of TA @ Amcor EMEA",status:"connected",replied:false,avatar:"JF"}
+];
+const ACTIVITY=[
+  {time:"06:51",action:"✅ Application sent",detail:"L'Oréal – Packaging Development Engineer"},
+  {time:"06:44",action:"✅ CV optimized (ATS 96%)",detail:"L'Oréal – PET, rPET, Hotfill keywords"},
+  {time:"06:37",action:"🤝 Connection sent",detail:"Claire Dupont, L'Oréal Talent Acquisition"},
+  {time:"06:22",action:"✅ Application sent",detail:"Danone – Sustainable Packaging Engineer"},
+  {time:"06:10",action:"🔍 14 new jobs detected",detail:"LinkedIn, APEC, Glassdoor, Welcome to the Jungle"},
+];
+
+// ── STATE ─────────────────────────────────────────────────────
+let activeTab="dashboard", jobs=[...JOBS], chatMessages=[{role:"assistant",content:"👋 Good morning Victor! I'm your AI recruiter.\n\nTop match: **L'Oréal (96%)** — CV already optimized. What would you like to focus on?"}];
+let chatLoading=false, selectedJob=null, cvContent="", coverContent="", cvTab="cv", cvLoading=false;
+let scanning=false, scanPct=0, autoMode=true, notifs=2;
+
+// ── HELPERS ───────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+function statCard(v,l,sub,icon,accent,pulse){
+  return `<div style="background:#0d1829;border:1px solid #1e293b;border-radius:14px;padding:18px 20px;position:relative;overflow:hidden;flex:1;min-width:120px">
+    <div style="position:absolute;top:0;left:0;right:0;height:2px;background:${accent}"></div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div><div style="font-size:26px;font-weight:800;color:#f1f5f9;font-family:monospace;line-height:1.1">${v}</div>
+      <div style="font-size:11px;color:#64748b;margin-top:3px">${l}</div>
+      ${sub?`<div style="font-size:10px;color:${accent};margin-top:2px;font-weight:600">${sub}</div>`:''}</div>
+      <div style="font-size:18px;opacity:.6">${icon}</div>
+    </div>
+    ${pulse?`<div style="position:absolute;bottom:10px;right:12px"><span style="display:inline-flex;position:relative;width:10px;height:10px"><span style="position:absolute;inset:0;border-radius:50%;background:${accent};opacity:.4;animation:ping 1.5s infinite"></span><span style="position:relative;border-radius:50%;width:10px;height:10px;background:${accent};display:block"></span></span></div>`:''}
+  </div>`;
+}
+function matchBar(s){const c=s>=90?'#22c55e':s>=80?'#f59e0b':'#94a3b8';return `<div style="display:flex;align-items:center;gap:4px"><div style="width:44px;height:5px;background:#1e293b;border-radius:3px;overflow:hidden"><div style="width:${s}%;height:100%;background:${c};border-radius:3px"></div></div><span style="font-size:11px;font-weight:700;color:${c};font-family:monospace">${s}%</span></div>`;}
+function chip(s){const m={applied:{l:'Sent ✓',bg:'#052e16',c:'#22c55e',b:'#166534'},generating:{l:'⟳ Generating',bg:'#1c1400',c:'#f59e0b',b:'#854d0e'},pending:{l:'Pending',bg:'#0f172a',c:'#64748b',b:'#1e293b'}};const x=m[s]||m.pending;return `<span style="padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;background:${x.bg};color:${x.c};border:1px solid ${x.b}">${x.l}</span>`;}
+function plat(n){const c={LinkedIn:'#0077b5',Indeed:'#003A9B',Glassdoor:'#0caa41','Welcome to the Jungle':'#3cbc8d',APEC:'#e2001a','France Travail':'#1d418a'};return `<span style="font-size:9px;padding:2px 5px;border-radius:3px;background:#0f172a;color:${c[n]||'#94a3b8'};font-weight:600">${n}</span>`;}
+function fmt(t){return t.replace(/\*\*([^*]+)\*\*/g,'<strong style="color:#38bdf8">$1</strong>');}
+
+// ── API CALLS ─────────────────────────────────────────────────
+async function callChat(messages, system) {
+  const res = await fetch(BACKEND_URL + '/api/chat', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({messages, system})
+  });
+  return await res.json();
+}
+
+async function callGenerateCV(job) {
+  const res = await fetch(BACKEND_URL + '/api/generate-cv', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({job})
+  });
+  return await res.json();
+}
+
+// ── RENDER ────────────────────────────────────────────────────
+function render(){document.getElementById("root").innerHTML=renderApp();bindEvents();}
+
+function renderApp(){
+  const applied=jobs.filter(j=>j.status==="applied").length;
+  const network=RECRUITERS.filter(r=>r.status==="connected").length;
+  return `
+  <div style="display:flex;min-height:100vh">
+    <div style="width:210px;background:#070e1a;border-right:1px solid #0f1f33;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;flex-shrink:0">
+      <div style="padding:18px 16px 12px;display:flex;align-items:center;gap:10px">
+        <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#0ea5e9,#6366f1);display:flex;align-items:center;justify-content:center;font-size:16px">⚡</div>
+        <div><div style="font-size:13px;font-weight:800;color:#f1f5f9">JobHunter</div><div style="font-size:9px;color:#0ea5e9;font-weight:600;letter-spacing:1px">AI PRO</div></div>
+      </div>
+      <div style="margin:0 12px 12px;background:#0d1829;border:1px solid #1e293b;border-radius:10px;padding:9px 12px">
+        <div style="font-size:9px;color:#64748b;margin-bottom:5px;font-weight:600">AUTO MODE</div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="display:inline-flex;position:relative;width:10px;height:10px"><span style="position:absolute;inset:0;border-radius:50%;background:${autoMode?'#22c55e':'#64748b'};opacity:.4;animation:ping 1.5s infinite"></span><span style="position:relative;border-radius:50%;width:10px;height:10px;background:${autoMode?'#22c55e':'#64748b'};display:block"></span></span>
+            <span style="font-size:11px;font-weight:700;color:${autoMode?'#22c55e':'#64748b'}">${autoMode?'ACTIVE':'PAUSED'}</span>
+          </div>
+          <div onclick="autoMode=!autoMode;render()" style="width:32px;height:18px;border-radius:9px;background:${autoMode?'#166534':'#1e293b'};border:2px solid ${autoMode?'#22c55e':'#334155'};cursor:pointer;position:relative">
+            <div style="width:10px;height:10px;border-radius:50%;background:${autoMode?'#22c55e':'#475569'};position:absolute;top:2px;left:${autoMode?'16px':'2px'};transition:left .3s"></div>
+          </div>
+        </div>
+      </div>
+      <nav style="flex:1;padding:0 8px">
+        ${[['dashboard','📊','Dashboard'],['jobs','💼','Job Listings'],['apply','⚡','Auto-Apply'],['network','👥','Networking'],['assistant','🤖','AI Chat'],['profile','⚙️','My Profile']].map(([id,icon,label])=>`
+        <button onclick="activeTab='${id}';render()" style="width:100%;display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;border:none;background:${activeTab===id?'linear-gradient(135deg,#0c2233,#1e1b4b)':'transparent'};color:${activeTab===id?'#38bdf8':'#64748b'};cursor:pointer;margin-bottom:2px;font-size:12px;font-weight:${activeTab===id?700:500};border-left:${activeTab===id?'2px solid #0ea5e9':'2px solid transparent'};text-align:left">
+          ${icon} ${label}${id==='assistant'?'<span style="margin-left:auto;background:#6366f1;color:white;border-radius:8px;font-size:9px;padding:1px 5px;font-weight:700">AI</span>':''}
+        </button>`).join('')}
+      </nav>
+      <div style="padding:10px 12px;border-top:1px solid #0f1f33">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
+          <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#0ea5e9,#6366f1);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0">VC</div>
+          <div><div style="font-size:11px;font-weight:700;color:#f1f5f9">Victor Castro M.</div><div style="font-size:9px;color:#64748b">PET Packaging Engineer</div></div>
+        </div>
+      </div>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;overflow:auto">
+      <div style="background:#070e1a;border-bottom:1px solid #0f1f33;padding:12px 22px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10">
+        <div>
+          <h1 style="font-size:16px;font-weight:800;color:#f1f5f9">${{dashboard:'Overview',jobs:'Job Listings',apply:'Auto-Apply',network:'Networking',assistant:'AI Recruiter Chat',profile:'My Profile'}[activeTab]}</h1>
+          <div style="font-size:11px;color:#64748b;margin-top:1px">Friday, March 13, 2026 · Last scan: 06:51 AM</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          ${scanning?`<div style="display:flex;align-items:center;gap:6px;background:#0c2233;border:1px solid #0ea5e9;border-radius:7px;padding:5px 10px"><div style="width:12px;height:12px;border-radius:50%;border:2px solid #0f2a3d;border-top-color:#0ea5e9;animation:spin 1s linear infinite"></div><span style="font-size:11px;color:#38bdf8;font-weight:600">Scanning ${scanPct}%</span></div>`:''}
+          <button onclick="startScan()" style="display:flex;align-items:center;gap:5px;background:#0d1829;border:1px solid #1e293b;border-radius:7px;padding:6px 12px;color:#94a3b8;font-size:12px;font-weight:600">🔄 Scan</button>
+          <div style="position:relative">
+            <button style="background:#0d1829;border:1px solid #1e293b;border-radius:7px;padding:7px;color:#94a3b8">🔔</button>
+            ${notifs>0?`<span style="position:absolute;top:-3px;right:-3px;background:#ef4444;border-radius:50%;width:14px;height:14px;font-size:8px;font-weight:700;color:white;display:flex;align-items:center;justify-content:center">${notifs}</span>`:''}
+          </div>
+        </div>
+      </div>
+      <div style="flex:1;overflow:auto">
+        ${activeTab==='dashboard'?renderDashboard(applied,network):''}
+        ${activeTab==='jobs'?renderJobs():''}
+        ${activeTab==='apply'?renderApply(applied):''}
+        ${activeTab==='network'?renderNetwork():''}
+        ${activeTab==='assistant'?renderChat():''}
+        ${activeTab==='profile'?renderProfile():''}
+      </div>
+    </div>
+  </div>
+  ${selectedJob?renderCVModal():''}`;
+}
+
+function renderDashboard(applied,network){
+  return `<div style="padding:22px;animation:fadeIn .4s ease">
+    <div style="background:linear-gradient(135deg,#0c2233,#1e1b4b);border:1px solid #1e3a5f;border-radius:14px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <div><div style="font-size:14px;font-weight:700;color:#f1f5f9">👋 Good morning, Victor!</div>
+      <div style="font-size:12px;color:#94a3b8;margin-top:2px">AI worked overnight — <strong style="color:#38bdf8">2 applications sent</strong>, <strong style="color:#22c55e">14 new jobs found</strong>. Top: <strong style="color:#f1f5f9">L'Oréal (96%)</strong></div></div>
+      <button onclick="activeTab='assistant';render()" style="padding:7px 14px;background:linear-gradient(135deg,#0ea5e9,#6366f1);border:none;border-radius:9px;color:white;font-size:11px;font-weight:700">Chat with AI →</button>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap">
+      ${statCard(jobs.length,'Jobs Detected','+14 overnight','🔍','#0ea5e9',true)}
+      ${statCard(applied,'Applications Sent','This week','📤','#22c55e',false)}
+      ${statCard(1,'Interviews','Scheduled','⭐','#f59e0b',false)}
+      ${statCard(network,'Recruiters','Connected','👥','#8b5cf6',false)}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 280px;gap:14px">
+      <div style="background:#0d1829;border:1px solid #1e293b;border-radius:14px;overflow:hidden">
+        <div style="padding:13px 16px;border-bottom:1px solid #1e293b;display:flex;justify-content:space-between;align-items:center">
+          <div style="font-size:13px;font-weight:700;color:#f1f5f9">🎯 Best Matches</div>
+          <button onclick="activeTab='jobs';render()" style="font-size:11px;color:#0ea5e9;background:none;border:none;cursor:pointer;font-weight:600">View all →</button>
+        </div>
+        ${jobs.slice(0,5).map((job,i)=>`
+        <div onclick="openCV(${job.id})" style="padding:11px 16px;border-bottom:1px solid #0f172a;display:flex;align-items:center;gap:11px;cursor:pointer;animation:slideIn .3s ${i*.05}s both">
+          <div style="width:36px;height:36px;border-radius:8px;background:#111827;border:1px solid #1e293b;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">${job.company[0]}</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:5px;margin-bottom:2px">
+              <span style="font-size:12px;font-weight:700;color:#f1f5f9">${job.title}</span>
+              ${job.urgent?'<span style="font-size:8px;padding:1px 4px;background:#450a0a;color:#f87171;border-radius:3px;font-weight:700">URGENT</span>':''}
+            </div>
+            <div style="font-size:11px;color:#64748b">${job.company} · ${job.location} · ${job.salary}</div>
+            <div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap">${plat(job.platform)}${job.keywords.map(k=>`<span style="font-size:9px;padding:1px 5px;background:#0f2a3d;color:#38bdf8;border-radius:3px">${k}</span>`).join('')}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0">${matchBar(job.match)}${chip(job.status)}</div>
+        </div>`).join('')}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="background:#0d1829;border:1px solid #1e293b;border-radius:14px;overflow:hidden">
+          <div style="padding:11px 14px;border-bottom:1px solid #1e293b;font-size:12px;font-weight:700;color:#f1f5f9">⚡ Overnight Activity</div>
+          <div style="padding:4px 0">
+            ${ACTIVITY.map(a=>`<div style="padding:6px 13px;display:flex;gap:7px"><span style="font-size:9px;color:#334155;font-family:monospace;flex-shrink:0;margin-top:1px">${a.time}</span><div><div style="font-size:10px;color:#94a3b8;font-weight:600">${a.action}</div><div style="font-size:10px;color:#475569">${a.detail}</div></div></div>`).join('')}
+          </div>
+        </div>
+        <div style="background:#0d1829;border:1px solid #1e293b;border-radius:14px;padding:12px 14px">
+          <div style="font-size:12px;font-weight:700;color:#f1f5f9;margin-bottom:8px">🏢 Target Companies</div>
+          <div style="display:flex;flex-wrap:wrap;gap:5px">${PROFILE.targetCompanies.map(c=>`<span style="font-size:10px;padding:4px 8px;background:#111827;border:1px solid #1e293b;border-radius:7px;color:#94a3b8;font-weight:600">${c}</span>`).join('')}</div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderJobs(){
+  return `<div style="padding:22px;animation:fadeIn .4s ease">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      ${jobs.map((job,i)=>`
+      <div style="background:#0d1829;border:1px solid #1e293b;border-radius:12px;padding:13px 16px;display:flex;align-items:center;gap:13px;animation:fadeIn .3s ${i*.04}s both">
+        <div style="width:40px;height:40px;border-radius:10px;background:#111827;border:1px solid #1e293b;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${job.company[0]}</div>
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+            <span style="font-size:13px;font-weight:700;color:#f1f5f9">${job.title}</span>
+            ${job.urgent?'<span style="font-size:8px;padding:1px 5px;background:#450a0a;color:#f87171;border-radius:3px;font-weight:700">URGENT</span>':''}
+          </div>
+          <div style="font-size:11px;color:#64748b;margin-bottom:5px">${job.company} · ${job.location} · ${job.salary} · ${job.posted}</div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap">${plat(job.platform)}${job.keywords.map(k=>`<span style="font-size:9px;padding:1px 5px;background:#0f172a;color:#38bdf8;border-radius:3px">${k}</span>`).join('')}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+          ${matchBar(job.match)}${chip(job.status)}
+          <div style="display:flex;gap:5px">
+            <button onclick="openCV(${job.id})" style="padding:4px 9px;background:#0c2233;border:1px solid #0ea5e9;border-radius:5px;color:#38bdf8;font-size:10px;font-weight:600">📄 Generate CV</button>
+            ${job.status!=='applied'?`<button onclick="applyJob(${job.id})" style="padding:4px 9px;background:linear-gradient(135deg,#0ea5e9,#6366f1);border:none;border-radius:5px;color:white;font-size:10px;font-weight:700">Apply</button>`:''}
+          </div>
+        </div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function renderApply(applied){
+  return `<div style="padding:22px;animation:fadeIn .4s ease">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">
+      ${[{l:'Applications this week',v:applied,max:50,c:'#22c55e'},{l:'Weekly target',v:50,max:100,c:'#0ea5e9'},{l:'Response rate',v:'18%',c:'#f59e0b'},{l:'Avg ATS score',v:'91%',c:'#8b5cf6'}].map(s=>`
+      <div style="background:#0d1829;border:1px solid #1e293b;border-radius:14px;padding:18px 20px">
+        <div style="font-size:24px;font-weight:800;color:#f1f5f9;font-family:monospace">${s.v}</div>
+        <div style="font-size:11px;color:#64748b;margin-top:3px">${s.l}</div>
+        ${s.max?`<div style="margin-top:8px;height:4px;background:#1e293b;border-radius:2px"><div style="width:${(Number(s.v)/s.max)*100}%;height:100%;background:${s.c};border-radius:2px"></div></div>`:''}
+      </div>`).join('')}
+    </div>
+    <div style="background:#0d1829;border:1px solid #1e293b;border-radius:14px;padding:18px">
+      <div style="font-size:14px;font-weight:700;color:#f1f5f9;margin-bottom:14px">🤖 Auto-Apply Queue</div>
+      ${jobs.filter(j=>j.status!=='applied').map((job,i)=>`
+      <div style="display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid #0f172a">
+        <div style="width:24px;height:24px;border-radius:6px;background:#111827;border:1px solid #1e293b;display:flex;align-items:center;justify-content:center;font-size:10px;color:#64748b;flex-shrink:0">${i+1}</div>
+        <div style="flex:1"><div style="font-size:12px;font-weight:600;color:#f1f5f9">${job.title} · ${job.company}</div><div style="font-size:10px;color:#64748b;margin-top:1px">${job.match}% match · ${job.platform}</div></div>
+        ${matchBar(job.match)}${chip(job.status)}
+        <button onclick="openCV(${job.id})" style="padding:5px 11px;background:linear-gradient(135deg,#0ea5e9,#6366f1);border:none;border-radius:7px;color:white;font-size:11px;font-weight:700">Generate & Apply</button>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function renderNetwork(){
+  return `<div style="padding:22px;animation:fadeIn .4s ease">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:11px">
+      ${RECRUITERS.map((r,i)=>`
+      <div style="background:#0d1829;border:1px solid #1e293b;border-radius:14px;padding:17px;animation:fadeIn .3s ${i*.07}s both">
+        <div style="display:flex;gap:10px;margin-bottom:12px">
+          <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#0ea5e9,#6366f1);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">${r.avatar}</div>
+          <div><div style="font-size:13px;font-weight:700;color:#f1f5f9">${r.name}</div><div style="font-size:10px;color:#64748b;margin-top:1px">${r.role}</div></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:10px;padding:2px 9px;border-radius:20px;font-weight:600;background:${r.status==='connected'?'#052e16':r.status==='sent'?'#1c1400':'#0f172a'};color:${r.status==='connected'?'#22c55e':r.status==='sent'?'#f59e0b':'#64748b'};border:1px solid ${r.status==='connected'?'#166534':r.status==='sent'?'#854d0e':'#1e293b'}">
+            ${r.status==='connected'?'✓ Connected':r.status==='sent'?'⟳ Message sent':'Pending'}
+          </span>
+          ${r.replied?'<span style="font-size:10px;color:#22c55e;font-weight:600">💬 Replied!</span>':''}
+        </div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function renderChat(){
+  return `<div style="display:flex;flex-direction:column;height:calc(100vh - 56px);background:#070e1a">
+    <div style="padding:9px 13px;border-bottom:1px solid #0f1f33;display:flex;gap:6px;flex-wrap:wrap">
+      ${["Why am I a good fit for L'Oréal?","Write a LinkedIn message to a recruiter","How to improve my French for interviews","Best ATS keywords for PET packaging"].map(q=>`<button onclick="sendQuick('${q.replace(/'/g,"\\'")}') " style="padding:4px 10px;background:#0d1829;border:1px solid #1e293b;border-radius:20px;color:#64748b;font-size:10px;font-weight:600;white-space:nowrap">${q}</button>`).join('')}
+    </div>
+    <div id="chatMessages" style="flex:1;overflow-y:auto;padding:13px;display:flex;flex-direction:column;gap:10px">
+      ${chatMessages.map(m=>`
+      <div style="display:flex;justify-content:${m.role==='user'?'flex-end':'flex-start'}">
+        ${m.role==='assistant'?'<div style="width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#0ea5e9,#6366f1);display:flex;align-items:center;justify-content:center;margin-right:7px;flex-shrink:0;margin-top:2px;font-size:11px">🤖</div>':''}
+        <div style="max-width:82%;padding:9px 12px;border-radius:${m.role==='user'?'13px 13px 4px 13px':'13px 13px 13px 4px'};background:${m.role==='user'?'linear-gradient(135deg,#0ea5e9,#6366f1)':'#111827'};border:${m.role==='assistant'?'1px solid #1e293b':'none'};font-size:12px;line-height:1.65;color:#e2e8f0;white-space:pre-wrap">${fmt(m.content)}</div>
+      </div>`).join('')}
+      ${chatLoading?'<div style="display:flex;gap:5px;padding:9px 12px;background:#111827;border-radius:13px;width:fit-content;border:1px solid #1e293b"><div style="width:5px;height:5px;border-radius:50%;background:#38bdf8;animation:bounce 1s 0s infinite"></div><div style="width:5px;height:5px;border-radius:50%;background:#38bdf8;animation:bounce 1s .15s infinite"></div><div style="width:5px;height:5px;border-radius:50%;background:#38bdf8;animation:bounce 1s .3s infinite"></div></div>':''}
+      <div id="chatEnd"></div>
+    </div>
+    <div style="padding:10px 13px;border-top:1px solid #1e293b;display:flex;gap:7px">
+      <input id="chatInput" placeholder="Ask your AI recruiter..." onkeydown="if(event.key==='Enter')sendChat()" style="flex:1;background:#111827;border:1px solid #1e293b;border-radius:9px;padding:8px 11px;color:#e2e8f0;font-size:12px;outline:none"/>
+      <button onclick="sendChat()" style="background:linear-gradient(135deg,#0ea5e9,#6366f1);border:none;border-radius:9px;padding:8px 12px;color:white;font-size:14px">➤</button>
+    </div>
+  </div>`;
+}
+
+function renderProfile(){
+  return `<div style="padding:22px;animation:fadeIn .4s ease;max-width:700px">
+    <div style="background:#0d1829;border:1px solid #1e293b;border-radius:14px;padding:20px;margin-bottom:13px">
+      <div style="display:flex;gap:13px;align-items:flex-start;margin-bottom:14px">
+        <div style="width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#0ea5e9,#6366f1);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;flex-shrink:0">VC</div>
+        <div>
+          <div style="font-size:17px;font-weight:800;color:#f1f5f9">${PROFILE.name}</div>
+          <div style="font-size:12px;color:#64748b;margin-top:2px">${PROFILE.title}</div>
+          <div style="display:flex;gap:10px;margin-top:5px;flex-wrap:wrap">
+            <span style="font-size:10px;color:#94a3b8">📍 ${PROFILE.location}</span>
+            <span style="font-size:10px;color:#94a3b8">📧 ${PROFILE.email}</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px">${PROFILE.skills.map(s=>`<span style="padding:4px 9px;background:#0c2233;border:1px solid #0ea5e9;border-radius:7px;color:#38bdf8;font-size:10px;font-weight:600">${s}</span>`).join('')}</div>
+    </div>
+    <div style="background:#0a1f0a;border:1px solid #166534;border-radius:14px;padding:17px">
+      <div style="font-size:13px;font-weight:700;color:#22c55e;margin-bottom:10px">🚀 Your Competitive Advantages in France</div>
+      ${[["9-year PET specialist","Very rare in France — hotfill, rPET, eco-design in high demand at L'Oréal, Danone, Nestlé."],["SolidWorks + Design background","Combining mechanical + industrial design makes you unique for innovation roles."],["Stanford Design Thinking","Strong differentiator for senior and R&D positions."],["Based in Île-de-France","Most target HQs are here or nearby."],["French improving (A2)","Shows commitment — mention it confidently in cover letters."]].map(([t,d])=>`
+      <div style="margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid #166534">
+        <div style="font-size:11px;font-weight:700;color:#86efac">✓ ${t}</div>
+        <div style="font-size:11px;color:#4ade80;opacity:.85;margin-top:2px">${d}</div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function renderCVModal(){
+  const job=jobs.find(j=>j.id===selectedJob);
+  return `<div onclick="if(event.target===this){selectedJob=null;render()}" style="position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:1000;display:flex;align-items:center;justify-content:center;padding:18px">
+    <div style="background:#0d1829;border:1px solid #1e293b;border-radius:18px;width:100%;max-width:640px;max-height:84vh;display:flex;flex-direction:column;overflow:hidden">
+      <div style="padding:16px 20px;border-bottom:1px solid #1e293b;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:15px;font-weight:700;color:#f1f5f9">📄 AI Documents — ${job.company}</div>
+          <div style="font-size:11px;color:#64748b;margin-top:2px">${job.title} · Match <span style="color:#22c55e;font-weight:700">${job.match}%</span></div>
+        </div>
+        <button onclick="selectedJob=null;render()" style="background:#1e293b;border:none;border-radius:7px;padding:5px 10px;color:#94a3b8;font-size:12px">✕</button>
+      </div>
+      <div style="display:flex;padding:10px 20px 0;gap:7px">
+        ${['cv','cover'].map(t=>`<button onclick="cvTab='${t}';render()" style="padding:6px 13px;border-radius:7px;border:1px solid ${cvTab===t?'#0ea5e9':'#1e293b'};background:${cvTab===t?'#0c2233':'transparent'};color:${cvTab===t?'#38bdf8':'#64748b'};font-size:12px;font-weight:600">${t==='cv'?'📋 CV':'✉️ Cover Letter'}</button>`).join('')}
+      </div>
+      <div style="flex:1;overflow:auto;padding:20px">
+        ${cvLoading?`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:180px;gap:12px"><div style="width:34px;height:34px;border-radius:50%;border:3px solid #1e293b;border-top-color:#0ea5e9;animation:spin 1s linear infinite"></div><div style="color:#64748b;font-size:12px">Generating documents for ${job.company}...</div></div>`:`<pre style="color:#cbd5e1;font-size:12px;line-height:1.75;white-space:pre-wrap;font-family:inherit;margin:0">${cvTab==='cv'?cvContent:coverContent}</pre>`}
+      </div>
+      ${!cvLoading?`<div style="padding:13px 20px;border-top:1px solid #1e293b;display:flex;gap:8px">
+        <button onclick="applyJob(${job.id})" style="flex:1;padding:9px;background:linear-gradient(135deg,#0ea5e9,#6366f1);border:none;border-radius:9px;color:white;font-weight:700;font-size:12px">🚀 Mark as Applied</button>
+        <button onclick="copyDoc()" style="padding:9px 13px;background:#111827;border:1px solid #1e293b;border-radius:9px;color:#94a3b8;font-size:12px">📋 Copy</button>
+      </div>`:''}
+    </div>
+  </div>`;
+}
+
+// ── ACTIONS ────────────────────────────────────────────────────
+function startScan(){
+  if(scanning)return;
+  scanning=true;scanPct=0;render();
+  const iv=setInterval(()=>{scanPct+=5;if(scanPct>=100){clearInterval(iv);scanning=false;notifs+=2;}render();},90);
+}
+
+function applyJob(id){jobs=jobs.map(j=>j.id===id?{...j,status:'applied'}:j);selectedJob=null;render();}
+
+function openCV(id){
+  selectedJob=id;cvContent='';coverContent='';cvLoading=true;cvTab='cv';render();
+  generateCV(id);
+}
+
+async function generateCV(id){
+  const job=jobs.find(j=>j.id===id);
+  try{
+    const data = await callGenerateCV(job);
+    cvContent = data.cv || data.error || 'Error generating CV';
+    coverContent = data.cover || 'Error generating cover letter';
+  }catch(e){
+    cvContent='⚠️ Backend not connected yet.\n\nFollow the setup guide to deploy your backend on Render.com.';
+    coverContent='⚠️ Backend not connected yet.';
+  }
+  cvLoading=false;render();
+}
+
+async function sendChat(){
+  const inp=document.getElementById('chatInput');
+  const msg=inp?.value?.trim();
+  if(!msg||chatLoading)return;
+  inp.value='';
+  chatMessages.push({role:'user',content:msg});
+  chatLoading=true;render();scrollChat();
+  await doChat();
+}
+
+async function sendQuick(q){
+  chatMessages.push({role:'user',content:q});
+  chatLoading=true;render();scrollChat();
+  await doChat();
+}
+
+async function doChat(){
+  const sys=`You are JobHunter AI, personal recruiter for Victor Castro Medina. PET Packaging/Mechanical Engineer, 9 years Envases Universales Mexico 2016-2025. Expertise: PET container design, hotfill, rPET, eco-design, lightweighting, production lines. Location: Île-de-France. Languages: Spanish (native), English (professional), French (A2). Education: Industrial Design UNAM + Stanford Design Thinking ME310. Target companies: L'Oréal, Danone, Nestlé, Amcor, ALPLA, Sidel. Be concise, specific, actionable. Respond in English.`;
+  try{
+    const data = await callChat(chatMessages.map(m=>({role:m.role,content:m.content})), sys);
+    chatMessages.push({role:'assistant',content:data.content?.[0]?.text||'Error.'});
+  }catch(e){
+    chatMessages.push({role:'assistant',content:'⚠️ Backend not connected yet. Deploy your backend on Render.com first.'});
+  }
+  chatLoading=false;render();scrollChat();
+}
+
+function scrollChat(){setTimeout(()=>{document.getElementById('chatEnd')?.scrollIntoView({behavior:'smooth'});},100);}
+function copyDoc(){const t=cvTab==='cv'?cvContent:coverContent;navigator.clipboard.writeText(t).then(()=>alert('Copied!'));}
+function bindEvents(){}
+
+render();
+</script>
+</body>
+</html>
